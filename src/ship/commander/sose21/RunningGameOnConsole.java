@@ -3,12 +3,15 @@ package ship.commander.sose21;
 import java.util.Scanner;
 
 import ship.commander.sose21.enums.DIRECTION;
-import ship.commander.sose21.exceptions.CoordinatesOutOfBoundException;
 import ship.commander.sose21.helping.MonitoringThroughConsole;
 import ship.commander.sose21.helping.Order;
 import ship.commander.sose21.ships.Ship;
 
 public class RunningGameOnConsole {
+
+	static boolean shotHasHit = false;
+	static boolean shotHasSunken = false;
+
 
 	public static void main(String[] args) {
 		
@@ -87,37 +90,69 @@ public class RunningGameOnConsole {
 	 	 
 	 String [] s = orderString.split(" ");
 	 
-	 order.setY(Integer.parseInt(s[0]));
-	 order.setX(Integer.parseInt(s[1]));
-	 order.setVh(DIRECTION.valueOf(s[2]));
-	 order.setLR(DIRECTION.valueOf(s[3]));
+	 order.setY(mapCoordinates(s[0]));
+	 order.setX(mapSndCoordinates(s[1]));
+	 order.setVh(mapDirections(s[2]));
+	 order.setLR(mapDirections(s[3]));
 	 
 	 return order;
  }
+
+ public static int mapCoordinates(String a){
+
+	 return switch (a) {
+		 case "A", "a" -> 0;
+		 case "B", "b" -> 1;
+		 case "C", "c" -> 2;
+		 case "D", "d" -> 3;
+		 case "E", "e" -> 4;
+		 case "F", "f" -> 5;
+		 case "G", "g" -> 6;
+		 case "H", "h" -> 7;
+		 case "I", "i" -> 8;
+		 case "J", "j" -> 9;
+		 default -> 0;
+	 };
+
+ }
+
+ public static int mapSndCoordinates(String a){
+
+	 return (Integer.parseInt(a))-1;
+
+ }
+
+ public static DIRECTION mapDirections(String a){
+
+		return switch (a){
+			case "VERTICALLY","V","v" -> DIRECTION.VERTICALLY;
+			case "HORIZONTALLY","H","h" -> DIRECTION.HORIZONTALLY;
+			case "RIGHT","R","r" -> DIRECTION.RIGHT;
+			case "LEFT","L","l" -> DIRECTION.LEFT;
+			default -> DIRECTION.UNKOWN;
+		};
+
+
+ }
  
  public static Commander placeShipsRoutine(Commander player,Scanner scan) {
-	 
 	 	System.out.println("-------------------------------------");
 		System.out.println(player.name+" AN DER REIHE MIT PLATZIEREN");
 		System.out.println("-------------------------------------");
 	 	 
-	    try {
-			player = actuallyPlaceShip(player,scan,"Carrier",player.carrier);
-			player = actuallyPlaceShip(player,scan,"Battleship",player.battleship);
-			player = actuallyPlaceShip(player,scan,"Cruiser",player.cruiser);
-			player = actuallyPlaceShip(player,scan,"Submarine",player.submarine);
-			player = actuallyPlaceShip(player,scan,"Destroyer",player.destroyer);
-		} catch (CoordinatesOutOfBoundException e1) {
-			
-			e1.printStackTrace();
-			
-		}	
-		
-		return player;
+
+			player = actuallyPlaceShip(player, scan, "Carrier", player.carrier);
+			player = actuallyPlaceShip(player, scan, "Battleship", player.battleship);
+			player = actuallyPlaceShip(player, scan, "Cruiser", player.cruiser);
+			player = actuallyPlaceShip(player, scan, "Submarine", player.submarine);
+			player = actuallyPlaceShip(player, scan, "Destroyer", player.destroyer);
+
+
+     return player;
 	 
  }
  
- public static Commander actuallyPlaceShip(Commander player,Scanner scanner,String name,Ship ship)throws CoordinatesOutOfBoundException {
+ public static Commander actuallyPlaceShip(Commander player,Scanner scanner,String name,Ship ship) {
 
 	 		 System.out.println(name);
 
@@ -125,21 +160,22 @@ public class RunningGameOnConsole {
 
 	 		 Order ord = clearOrder(order);
 				
-			 	
-				while(Gameboard.checkIfOtherShipsAlreadyBlockPlace(ord.getY(),ord.getX(),ord.getVh(),ord.getLR(),ship,player.gameBoard) || player.gameBoard.checkIfPlacingShipGoesOutOfBounds(ord.getY(),ord.getX(),ord.getVh(),ord.getLR(),ship)) {
+	 		 try {
+                 while (!player.gameBoard.placeShip(ord.getY(), ord.getX(), ord.getVh(), ord.getLR(), ship)) {
 
-					System.out.println(name);
+                     System.out.println(name);
 
-					order = scanner.nextLine();
+                     order = scanner.nextLine();
 
-					 ord = clearOrder(order);
+                     ord = clearOrder(order);
 
-				}
+                 }
+             }catch(Exception e){
+				    e.printStackTrace();
+				    clear();
+	 		        actuallyPlaceShip(player, scanner, name, ship);
 
-				player.gameBoard.placeShip(ord.getY(), ord.getX(), ord.getVh(), ord.getLR(), ship);
-
-
-
+                 }
 				return player; 
 	 
 		}
@@ -192,19 +228,50 @@ public class RunningGameOnConsole {
  public static Commander shootLoop(Commander own,Commander enemy,Scanner scanner) {
 	 
 	 	System.out.println(MonitoringThroughConsole.monitorGame(own.gameBoard, enemy.gameBoard));
+	 	if(shotHasHit){
+			System.out.println(" TREFFER! \n");
+			shotHasHit = false;
+		}
+	 	if(shotHasSunken){
+
+	 		System.out.println(" VERSENKT! \n");
+	 		shotHasSunken = false;
+
+		}
 		System.out.println("Koordinaten fuer Schuss angeben");
-		
-		int yP1 = scanner.nextInt();
-		int xP1 = scanner.nextInt();
-					
-		if(Commander.shoot(yP1, xP1, enemy.gameBoard)) {
-			
-			System.out.println("TREFFER");
-			
-			enemy = shootLoop(own,enemy,scanner);
-			
-		};
-	 
+
+
+
+		 String [] s = scanner.nextLine().split(" ");
+
+		 try {
+
+             int yP1 = mapCoordinates(s[0]);
+             int xP1 = mapSndCoordinates(s[1]);
+
+             if (Commander.shoot(yP1, xP1, enemy.gameBoard)) {
+                 shotHasHit = true;
+
+                 if (enemy.gameBoard.checkIfNewShipIsDestroyed()) {
+
+
+
+                     shotHasSunken = true;
+
+                 }
+
+                 enemy = shootLoop(own, enemy, scanner);
+             }
+
+
+
+         }catch(Exception e){
+
+            clear();
+             System.out.println("KOORDINATEN UNGÜLTIG");
+		     shootLoop(own,enemy,scanner);
+
+         }
 	 
 	 return enemy;
  }

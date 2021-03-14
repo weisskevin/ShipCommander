@@ -1,7 +1,6 @@
 package ship.commander.sose21;
 
 import ship.commander.sose21.enums.DIRECTION;
-import ship.commander.sose21.exceptions.CoordinatesOutOfBoundException;
 import ship.commander.sose21.ships.Ship;
 
 
@@ -33,13 +32,15 @@ public class Gameboard {
 	 * Left and Up is the same = -1 || Right and Down is the same +1
 	 */
 	
-	public void placeShip(int y, int x,DIRECTION directionVH, DIRECTION directionLR, Ship ship)throws CoordinatesOutOfBoundException{ //TODO  //VH = Vertically Horizontally LR = Left Right
-		
-//		if(checkIfCoordinatesOnBoard(y,x) || checkIfPlacingShipGoesOutOfBounds(y,x,directionVH,directionLR,ship)) {
-//			return;
-//		}
-		
-		
+	public boolean placeShip(int y, int x,DIRECTION directionVH, DIRECTION directionLR, Ship ship){
+
+		if(this.checkIfPlacingShipGoesOutOfBounds(y,x,directionVH,directionLR,ship) || this.checkIfOtherShipsAlreadyBlockPlace(y,x,directionVH,directionLR,ship) ){
+
+			return false;
+
+		}
+
+
 		int rl = 1;
 		int shipLength = ship.getShipParts().length;
 		
@@ -63,7 +64,7 @@ public class Gameboard {
 									
 			}
 			
-		}else {
+		}else if(directionVH == DIRECTION.VERTICALLY) {
 			
 			int index = 0;
 			for(int k = y; shipLength > 0; k += rl ) {  // x = 5   -1     3 				
@@ -80,10 +81,11 @@ public class Gameboard {
 		}
 		
 		this.shipsOnBoard[this.counterOfShipsOnBoard++] = ship;
-		
+
+		return true;
 	}
 	
-	public int checkIfNewShipIsDestroyed() {
+	public boolean checkIfNewShipIsDestroyed() {
 		int counter = 0;
 		
 		for(int i = 0; i < 5;i++) {
@@ -96,68 +98,89 @@ public class Gameboard {
 			
 		}
 		
-		if(counterOfDestroyedShips < counter) {
+		if(this.counterOfDestroyedShips < counter) {
 			
-			counterOfDestroyedShips = counter;
+			this.counterOfDestroyedShips = counter;
 			
-			System.out.println("SHIP HAS BEEN DESTROYED");
-			
-			
-			
+
+
+			return true;
 		}
-		return counter;
+
+		return false;
+	}
+
+	public boolean allShipsDestroyed(){
+
+		for(Ship ship : shipsOnBoard){
+
+			if(!ship.isDestroyed){
+
+
+				return false;
+			}
+
+
+		}
+
+		return true;
 	}
 	
-	public static boolean checkIfOtherShipsAlreadyBlockPlace(int y, int x,DIRECTION dirVH,DIRECTION dirLR,Ship ship, Gameboard gameBoard) {
+	public boolean checkIfOtherShipsAlreadyBlockPlace(int y, int x,DIRECTION dirVH,DIRECTION dirLR,Ship ship) {
 		
 		int lr = dirLR == DIRECTION.RIGHT ? 1 : -1;
 		
 		if(dirVH == DIRECTION.HORIZONTALLY) {  //-
-			
-			for(int i = x; i < ship.getShipParts().length;i += lr) {
+
+			for(int i = 0; i < ship.getShipParts().length;i++) {
 				
-				if(gameBoard.checkIfCoordinatesOnBoard(y, i) && Gameboard.checkIfFieldsAroundFieldAreBlocked(y, i, gameBoard)) {
+				if(this.checkIfCoordinatesOnBoard(y, x) && this.checkIfFieldsAroundFieldAreBlocked(y, x)) {
 									
 					return true;
 				}
-		
+				x += lr;
 			}
 			
 		}else if(dirVH == DIRECTION.VERTICALLY) {
-				
-			for(int i = y; i < ship.getShipParts().length;i += lr) {
-				
-					if(gameBoard.checkIfCoordinatesOnBoard(i, x) && Gameboard.checkIfFieldsAroundFieldAreBlocked(y, i, gameBoard)) {
+
+			for(int i = 0; i < ship.getShipParts().length;i ++) {
+
+					if(this.checkIfCoordinatesOnBoard(y, x) && this.checkIfFieldsAroundFieldAreBlocked(y, x)) {
 							
 					return true;
 				}
+
+					y+=lr;
 					
 			}
 			 			
 		}
+
+
 					    
 		return false;  						 
 	}				                             
 	
-	public static boolean checkIfFieldsAroundFieldAreBlocked(int y,int x,Gameboard gameBoard) {
+	public boolean checkIfFieldsAroundFieldAreBlocked(int y,int x) {
 		
-		y -= 1;    //    00 01 02
-		x -= 1;   //     10 11 12
-				  //
+		y -= 1;    //    00 01
+		x -= 1;   //     10 11
+				  //     20 21
 		for(int i = 0; i < 3;i++) { // 0
 						
 			for(int k = 0;k < 3;k++) { // 0
-				
-				if(gameBoard.checkIfCoordinatesOnBoard(y,x) && gameBoard.getBoard()[y][x].isShipOn() ) {
+
+				if(this.checkIfCoordinatesOnBoard(y,x) && this.board[y][x].isShipOn() ) {
 									
 					return true;
+
 					
 				}
-						
+
 			x++;
-			
+
 		   }
-			x -=2;
+			x -=3;
 			y++;
 		}
 				
@@ -166,17 +189,10 @@ public class Gameboard {
 	}
 	
 	public boolean checkIfCoordinatesOnBoard(int y,int x) {
-		
-		if(y > 9 || y < 0 || x < 0 || x > 9) {
-			
-			
-			return false;
-			
-		}
-		
-		return true;
-		
-		
+
+		return y <= 9 && y >= 0 && x >= 0 && x <= 9;
+
+
 	}
 	
 	public boolean checkIfPlacingShipGoesOutOfBounds(int y, int x,DIRECTION dirVH,DIRECTION dirLR,Ship ship) {//TODO
@@ -186,25 +202,26 @@ public class Gameboard {
 		if(dirVH == DIRECTION.HORIZONTALLY) {
 			
 			if(dirLR == DIRECTION.LEFT) {
-				
-				if(x < shipLength) {return true;}
+
+				return x < shipLength;
 					
 			}else {
-				if(10 - x < shipLength) {return true;}
+
+				return 10 - x < shipLength;
+
 			}
 		}else {
 			
 			if(dirLR == DIRECTION.LEFT) {
-				
-				if(y < shipLength) {return true;}
+
+				return y < shipLength;
 					
 			}else {
-				if(10 - y < shipLength) {return true;}
+
+				return 10 - y < shipLength;
 			}
 			
 		}
-			
-		return false;
 	}
 	
 	public String toString() {
@@ -229,7 +246,7 @@ public class Gameboard {
 					
 				}else {
 					
-					if(waterField.getBlankWaterHit() == true) {
+					if(waterField.getBlankWaterHit()) {
 						
 						sb.append("_ ");
 						
@@ -253,8 +270,6 @@ public class Gameboard {
 		return board;
 	}
 
-	public void setBoard(WaterField [][] board) {
-		this.board = board;
-	}
+
 
 }
