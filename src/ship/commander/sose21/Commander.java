@@ -31,7 +31,7 @@ public class Commander {
 			if(gb.getBoard()[y][x].isShipOn()) {
 							
 				gb.getBoard()[y][x].getPartOnField().setDestroyed(true);
-				gb.checkIfNewShipIsDestroyed();
+				//gb.checkIfNewShipIsDestroyed();
 				
 				return true;
 				
@@ -49,7 +49,7 @@ public class Commander {
 	
 	public void hasCommanderLost() {
 		
-		if(this.gameBoard.checkIfNewShipIsDestroyed() == 5) {
+		if(this.gameBoard.allShipsDestroyed()) {
 			
 			this.hasLost = true;
 			

@@ -1,42 +1,31 @@
 package ship.commander.sose21;
 
+import ship.commander.sose21.enums.DIRECTION;
+import ship.commander.sose21.exceptions.CoordinatesOutOfBoundException;
+import ship.commander.sose21.ships.Battleship;
+import ship.commander.sose21.ships.Carrier;
+import ship.commander.sose21.ships.Destroyer;
+
 import java.util.Scanner;
 
 public class test {
 	
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws CoordinatesOutOfBoundException {
 		
-		Scanner scanner = new Scanner(System.in);
-		
-		testMethod(scanner);
-	
-		
+
+		Gameboard gameboard = new Gameboard();
+		gameboard.placeShip(0,0, DIRECTION.VERTICALLY,DIRECTION.RIGHT,new Carrier());
+
+		System.out.println(gameboard.toString());
+
+
+		System.out.println(gameboard.checkIfOtherShipsAlreadyBlockPlace(4,1,DIRECTION.VERTICALLY,DIRECTION.RIGHT,new Battleship()));
+
 	}
 
 
 
-	public static void testMethod(Scanner scanner) {
-	
-		while(true) {
-			
-			boolean i = scanner.nextBoolean();
-			
-			
-			if(i) {
-				
-				System.out.println("AGAIN");
-				
-			}else {
-				
-				break;
-			}
-			
-		}
-		
-		System.out.println("YAY");
-		
-	}
 	
 	
 	
